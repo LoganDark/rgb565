@@ -1,0 +1,50 @@
+[package]
+name = 'rgb565'
+version = '0.1.0'
+authors = ['LoganDark']
+edition = '2021'
+description = 'Contains rouotines for working with RGB565 and converting it to RGB and sRGB'
+repository = 'https://github.com/LoganDark/rgb565'
+license = 'MIT'
+keywords = ['rgb565']
+categories = ['graphics', 'embedded', 'no-std']
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = [
+	'std',
+	'swap_components_lut',
+	'l5_to_l8_lut',
+	'l6_to_l8_lut',
+	'l5_to_s8_lut',
+	'l6_to_s8_lut',
+	'l565_to_l888_lut',
+	'l565_to_s888_lut',
+	'l8_to_l5_lut',
+	'l8_to_l6_lut',
+	's8_to_l5_lut',
+	's8_to_l6_lut',
+	# The below two LUTs are 32 MiB, and therefore probably shouldn't be enabled
+	# by default for anyone using the from_rgb888_components family of methods.
+	# However they remain available as cargo features.
+#	'l888_to_l565_lut',
+#	's888_to_l565_lut'
+]
+
+std = []
+swap_components_lut = []
+l5_to_l8_lut = []
+l6_to_l8_lut = []
+l5_to_s8_lut = []
+l6_to_s8_lut = []
+l565_to_l888_lut = []
+l565_to_s888_lut = []
+l8_to_l5_lut = []
+l8_to_l6_lut = []
+s8_to_l5_lut = []
+s8_to_l6_lut = []
+l888_to_l565_lut = []
+s888_to_l565_lut = []
+
+[dependencies]
