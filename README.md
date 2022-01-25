@@ -69,7 +69,7 @@ $ cargo build
 ## Testing
 
 ```
-cargo test
+$ cargo test
 ```
 
 ## License
