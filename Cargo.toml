@@ -1,9 +1,9 @@
 [package]
 name = 'rgb565'
-version = '0.1.0'
+version = '0.1.1'
 authors = ['LoganDark']
 edition = '2021'
-description = 'Contains rouotines for working with RGB565 and converting it to RGB and sRGB'
+description = 'Contains routines for working with RGB565 and converting it to RGB and sRGB'
 readme = 'README.md'
 repository = 'https://github.com/LoganDark/rgb565'
 license = 'MIT'
