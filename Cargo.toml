@@ -4,6 +4,7 @@ version = '0.1.0'
 authors = ['LoganDark']
 edition = '2021'
 description = 'Contains rouotines for working with RGB565 and converting it to RGB and sRGB'
+readme = 'README.md'
 repository = 'https://github.com/LoganDark/rgb565'
 license = 'MIT'
 keywords = ['rgb565']

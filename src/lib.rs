@@ -7,9 +7,9 @@
 //! displays that only have a low degree of color reproduction.
 //!
 //! `rgb565` includes out-of-the-box methods for converting to and from many
-//! different orderings and endiannesses, with each routine being manually
-//! verified, automatically verified and also tested on physical devices that
-//! use the RGB565 format.
+//! orderings and endiannesses, with each routine being manually verified,
+//! automatically verified and also tested on physical devices that use the
+//! RGB565 format.
 //!
 //! # LUTs
 //!
