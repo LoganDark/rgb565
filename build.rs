@@ -26,9 +26,9 @@ fn $func(writer: &mut dyn Write) -> ::std::io::Result<()> {
 	Ok(())
 }
 
-)*const $name: &[(&str, fn(&mut dyn Write) -> ::std::io::Result<()>)] = &[$(
+)*const $name: &[(&str, usize, fn(&mut dyn Write) -> ::std::io::Result<()>)] = &[$(
 	#[cfg(feature = $feature)]
-	(stringify!($func), $func)),*
+	(stringify!($func), $size as usize $(* $mult)?, $func)),*
 ];}
 }
 
@@ -51,9 +51,11 @@ lut_gen! { LUTS:
 fn main() {
 	let out_dir = std::env::var("OUT_DIR").unwrap();
 
-	for (name, func) in LUTS.iter() {
+	for (name, size, func) in LUTS.iter().copied() {
 		let file = File::create(format!("{}/{}.bin", out_dir, name)).unwrap();
-		let mut writer = BufWriter::with_capacity(32 * 1024 * 1024, file);
+		file.set_len(size as u64).unwrap();
+
+		let mut writer = BufWriter::with_capacity(size, file);
 		func(&mut writer).unwrap();
 		writer.flush().unwrap();
 	}
