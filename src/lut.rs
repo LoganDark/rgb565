@@ -20,19 +20,55 @@ mod transforms;
 /// `Lutable` represents a transformation that may or may not be backed by a
 /// look-up table (LUT) depending on the features that were enabled for this
 /// crate.
-pub struct Lutable<A, R, const N: usize, const S: usize, const T: usize>(Result<(&'static [u8; T], fn(A) -> usize, fn([u8; S]) -> R), fn(A) -> R>);
+pub struct Lutable<I: MapIn, O: MapOut<S>, const N: usize, const S: usize, const T: usize>(Result<&'static [u8; T], fn(I) -> O>);
 
-impl<A, R, const N: usize, const S: usize, const T: usize> Lutable<A, R, N, S, T> {
-	pub fn map(&self, value: A) -> R {
+/// Trait for values that can be looked up in a LUT.
+pub trait MapIn {
+	#[inline]
+	fn map_in(self) -> usize;
+}
+
+/// Trait for values that can be retrieved from a LUT.
+pub trait MapOut<const N: usize> {
+	#[inline]
+	fn map_out(bytes: [u8; N]) -> Self;
+}
+
+impl MapIn for u8 {
+	fn map_in(self) -> usize { self as usize }
+}
+
+impl MapIn for u16 {
+	fn map_in(self) -> usize { self as usize }
+}
+
+impl MapIn for [u8; 3] {
+	fn map_in(self) -> usize { u32::from_be_bytes([0, self[0], self[1], self[2]]) as usize }
+}
+
+impl MapOut<1> for u8 {
+	fn map_out(bytes: [u8; 1]) -> Self { bytes[0] }
+}
+
+impl MapOut<2> for u16 {
+	fn map_out(bytes: [u8; 2]) -> Self { u16::from_le_bytes(bytes) }
+}
+
+impl MapOut<3> for [u8; 3] {
+	fn map_out(bytes: [u8; 3]) -> Self { bytes }
+}
+
+impl<I: MapIn, O: MapOut<S>, const N: usize, const S: usize, const T: usize> Lutable<I, O, N, S, T> {
+	#[inline]
+	pub fn map(&self, value: I) -> O {
 		match &self.0 {
-			Ok((lut, map_in, map_out)) => {
-				let index = map_in(value) * S;
-				let slice: [u8; S] = lut[index..index + S].try_into().unwrap();
-				map_out(slice)
+			Ok(lut) => {
+				let index = value.map_in() * S;
+				let bytes: [u8; S] = unsafe { lut[index..index + S].try_into().unwrap_unchecked() };
+				O::map_out(bytes)
 			}
-			Err(transform) => {
-				transform(value)
-			}
+
+			Err(transform) => transform(value)
 		}
 	}
 }
@@ -43,44 +79,30 @@ macro_rules! pick_empty {
 }
 
 macro_rules! lutable {
-	{$($name:literal: $ident:ident[$size:literal $(* $mult:literal)?] => $a:ty |$map_in_pat:pat_param| $map_in_expr:expr, $r:ty |$map_out_pat:pat_param| $map_out_expr:expr => $func:expr);+;} => {
+	{$($name:literal: $ident:ident[$size:literal $(* $mult:literal)?] => $i:ty, $o:ty => $func:expr);+;} => {
 $(
 #[cfg(feature = $name)]
-#[allow(non_snake_case)]
-mod $ident {
-	#[cfg(feature = $name)]
-	pub fn map_in($map_in_pat: $a) -> usize {
-		$map_in_expr
-	}
-
-	#[cfg(feature = $name)]
-	pub fn map_out($map_out_pat: [u8; 1 $(- 1 + $mult)?]) -> $r {
-		$map_out_expr
-	}
-}
-
-#[cfg(feature = $name)]
-pub const $ident: Lutable<$a, $r, { $size }, { 1 $(- 1 + $mult)? }, { $size $(* $mult)? }> = Lutable(Ok((include_bytes!(concat!(env!("OUT_DIR"), "/", $name, ".bin")), $ident::map_in, $ident::map_out)));
+pub const $ident: Lutable<$i, $o, { $size }, { 1 $(- 1 + $mult)? }, { $size $(* $mult)? }> = Lutable(Ok(include_bytes!(concat!(env!("OUT_DIR"), "/", $name, ".bin"))));
 #[cfg(not(feature = $name))]
-pub const $ident: Lutable<$a, $r, { $size }, { 1 $(- 1 + $mult)? }, { $size $(* $mult)? }> = Lutable(Err($func));
+pub const $ident: Lutable<$i, $o, { $size }, { 1 $(- 1 + $mult)? }, { $size $(* $mult)? }> = Lutable(Err($func));
 )+
 	}
 }
 
 lutable! {
-	"swap_components_lut": SWAP_COMPONENTS_LUT[65536 * 2] => u16 |rgb565| rgb565 as usize, u16 |bytes| u16::from_le_bytes(bytes) => transforms::swap_components;
-	"l5_to_l8_lut": L5_TO_L8_LUT[32] => u8 |l5| l5 as usize, u8 |[l8]| l8 => transforms::l5_to_l8;
-	"l6_to_l8_lut": L6_TO_L8_LUT[64] => u8 |l6| l6 as usize, u8 |[l8]| l8 => transforms::l6_to_l8;
-	"l5_to_s8_lut": L5_TO_S8_LUT[32] => u8 |l5| l5 as usize, u8 |[s8]| s8 => transforms::l5_to_s8;
-	"l6_to_s8_lut": L6_TO_S8_LUT[64] => u8 |l6| l6 as usize, u8 |[s8]| s8 => transforms::l6_to_s8;
-	"l565_to_l888_lut": L565_TO_L888_LUT[65536 * 3] => u16 |l565| l565 as usize, [u8; 3] |l888| l888 => transforms::l565_to_l888;
-	"l565_to_s888_lut": L565_TO_S888_LUT[65536 * 3] => u16 |l565| l565 as usize, [u8; 3] |s888| s888 => transforms::l565_to_s888;
-	"l8_to_l5_lut": L8_TO_L5_LUT[256] => u8 |l8| l8 as usize, u8 |[l5]| l5 => transforms::l8_to_l5;
-	"l8_to_l6_lut": L8_TO_L6_LUT[256] => u8 |l8| l8 as usize, u8 |[l6]| l6 => transforms::l8_to_l6;
-	"s8_to_l5_lut": S8_TO_L5_LUT[256] => u8 |s8| s8 as usize, u8 |[l5]| l5 => transforms::s8_to_l5;
-	"s8_to_l6_lut": S8_TO_L6_LUT[256] => u8 |s8| s8 as usize, u8 |[l6]| l6 => transforms::s8_to_l6;
-	"l888_to_l565_lut": L888_TO_L565_LUT[16777216 * 2] => [u8; 3] |[r, g, b]| u32::from_be_bytes([0, r, g, b]) as usize, u16 |bytes| u16::from_le_bytes(bytes) => transforms::l888_to_l565;
-	"s888_to_l565_lut": S888_TO_L565_LUT[16777216 * 2] => [u8; 3] |[r, g, b]| u32::from_be_bytes([0, r, g, b]) as usize, u16 |bytes| u16::from_le_bytes(bytes) => transforms::s888_to_l565;
+	"swap_components_lut": SWAP_COMPONENTS_LUT[65536 * 2] => u16, u16 => transforms::swap_components;
+	"l5_to_l8_lut": L5_TO_L8_LUT[32] => u8, u8 => transforms::l5_to_l8;
+	"l6_to_l8_lut": L6_TO_L8_LUT[64] => u8, u8 => transforms::l6_to_l8;
+	"l5_to_s8_lut": L5_TO_S8_LUT[32] => u8, u8 => transforms::l5_to_s8;
+	"l6_to_s8_lut": L6_TO_S8_LUT[64] => u8, u8 => transforms::l6_to_s8;
+	"l565_to_l888_lut": L565_TO_L888_LUT[65536 * 3] => u16, [u8; 3] => transforms::l565_to_l888;
+	"l565_to_s888_lut": L565_TO_S888_LUT[65536 * 3] => u16, [u8; 3] => transforms::l565_to_s888;
+	"l8_to_l5_lut": L8_TO_L5_LUT[256] => u8, u8 => transforms::l8_to_l5;
+	"l8_to_l6_lut": L8_TO_L6_LUT[256] => u8, u8 => transforms::l8_to_l6;
+	"s8_to_l5_lut": S8_TO_L5_LUT[256] => u8, u8 => transforms::s8_to_l5;
+	"s8_to_l6_lut": S8_TO_L6_LUT[256] => u8, u8 => transforms::s8_to_l6;
+	"l888_to_l565_lut": L888_TO_L565_LUT[16777216 * 2] => [u8; 3], u16 => transforms::l888_to_l565;
+	"s888_to_l565_lut": S888_TO_L565_LUT[16777216 * 2] => [u8; 3], u16 => transforms::s888_to_l565;
 }
 
 #[cfg(test)]
