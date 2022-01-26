@@ -20,7 +20,7 @@ mod transforms;
 /// `Lutable` represents a transformation that may or may not be backed by a
 /// look-up table (LUT) depending on the features that were enabled for this
 /// crate.
-pub struct Lutable<I: MapIn, O: MapOut<S>, const N: usize, const S: usize, const T: usize>(Result<&'static [u8; T], fn(I) -> O>);
+pub struct Lutable<I: MapIn, O: MapOut<S>, const N: usize, const S: usize>(Result<&'static [u8; N], fn(I) -> O>);
 
 /// Trait for values that can be looked up in a LUT.
 pub trait MapIn {
@@ -58,7 +58,7 @@ impl MapOut<3> for [u8; 3] {
 	fn map_out(bytes: [u8; 3]) -> Self { bytes }
 }
 
-impl<I: MapIn, O: MapOut<S>, const N: usize, const S: usize, const T: usize> Lutable<I, O, N, S, T> {
+impl<I: MapIn, O: MapOut<S>, const N: usize, const S: usize> Lutable<I, O, N, S> {
 	#[inline]
 	pub fn map(&self, value: I) -> O {
 		match &self.0 {
@@ -82,9 +82,9 @@ macro_rules! lutable {
 	{$($name:literal: $ident:ident[$size:literal $(* $mult:literal)?] => $i:ty, $o:ty => $func:expr);+;} => {
 $(
 #[cfg(feature = $name)]
-pub const $ident: Lutable<$i, $o, { $size }, { 1 $(- 1 + $mult)? }, { $size $(* $mult)? }> = Lutable(Ok(include_bytes!(concat!(env!("OUT_DIR"), "/", $name, ".bin"))));
+pub const $ident: Lutable<$i, $o, { $size $(* $mult)? }, { 1 $(- 1 + $mult)? }> = Lutable(Ok(include_bytes!(concat!(env!("OUT_DIR"), "/", $name, ".bin"))));
 #[cfg(not(feature = $name))]
-pub const $ident: Lutable<$i, $o, { $size }, { 1 $(- 1 + $mult)? }, { $size $(* $mult)? }> = Lutable(Err($func));
+pub const $ident: Lutable<$i, $o, { $size $(* $mult)? }, { 1 $(- 1 + $mult)? }> = Lutable(Err($func));
 )+
 	}
 }
