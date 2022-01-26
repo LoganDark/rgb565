@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Write;
+use std::io::{BufWriter, Write};
 
 use with_std::{srgb_transfer, srgb_untransfer};
 
@@ -18,17 +18,15 @@ macro_rules! pick_empty {
 macro_rules! lut_gen {
 	{$name:ident: $($feature:literal: $func:ident($size:literal $(* $mult:literal)?) => |$i:ident| $calc:expr),*} =>
 {$(#[cfg(feature = $feature)]
-fn $func() -> Vec<u8> {
-	let mut vec = vec![0u8; ($size as usize + 1) $(* $mult)?];
-
+fn $func(writer: &mut dyn Write) -> ::std::io::Result<()> {
 	for $i in 0..=$size {
-		pick_empty!(($($mult)?); { $(vec[$i as usize * $mult .. $i as usize * $mult + $mult].copy_from_slice($calc.as_slice());)? }; { vec[$i as usize] = $calc; });
+		writer.write_all(pick_empty!(($($mult)?); { $($calc as [u8; $mult])? }; { [$calc] }).as_slice())?;
 	}
 
-	vec
+	Ok(())
 }
 
-)*const $name: &[(&str, fn() -> Vec<u8>)] = &[$(
+)*const $name: &[(&str, fn(&mut dyn Write) -> ::std::io::Result<()>)] = &[$(
 	#[cfg(feature = $feature)]
 	(stringify!($func), $func)),*
 ];}
@@ -54,7 +52,9 @@ fn main() {
 	let out_dir = std::env::var("OUT_DIR").unwrap();
 
 	for (name, func) in LUTS.iter() {
-		File::create(format!("{}/{}.bin", out_dir, name)).unwrap()
-			.write_all(&func()).unwrap();
+		let file = File::create(format!("{}/{}.bin", out_dir, name)).unwrap();
+		let mut writer = BufWriter::with_capacity(32 * 1024 * 1024, file);
+		func(&mut writer).unwrap();
+		writer.flush().unwrap();
 	}
 }
