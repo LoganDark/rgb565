@@ -1,7 +1,6 @@
 #![allow(unused)]
 
 pub use transforms::{pack_565, unpack_565};
-#[cfg(feature = "std")]
 use with_std::{srgb_transfer, srgb_untransfer};
 
 #[cfg(feature = "std")]
@@ -9,10 +8,11 @@ use with_std::{srgb_transfer, srgb_untransfer};
 mod with_std;
 
 #[cfg(not(feature = "std"))]
-fn srgb_transfer(v: f32) -> f32 { unimplemented!() }
+mod with_std {
+	fn srgb_transfer(v: f32) -> f32 { unimplemented!() }
 
-#[cfg(not(feature = "std"))]
-fn srgb_untransfer(v: f32) -> f32 { unimplemented!() }
+	fn srgb_untransfer(v: f32) -> f32 { unimplemented!() }
+}
 
 #[path = "./transforms.rs"]
 mod transforms;
