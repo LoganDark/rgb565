@@ -1,6 +1,6 @@
 [package]
 name = 'rgb565'
-version = '0.1.1'
+version = '0.1.2'
 authors = ['LoganDark']
 edition = '2021'
 description = 'Contains routines for working with RGB565 and converting it to RGB and sRGB'
