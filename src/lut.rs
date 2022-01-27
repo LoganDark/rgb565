@@ -73,11 +73,6 @@ impl<I: MapIn, O: MapOut<S>, const N: usize, const S: usize> Lutable<I, O, N, S>
 	}
 }
 
-macro_rules! pick_empty {
-	(($something:tt); $whatever:tt; $else:tt) => { $whatever };
-	((); $whatever:tt; $else:tt) => { $else }
-}
-
 macro_rules! lutable {
 	{$($name:literal: $ident:ident[$size:literal $(* $mult:literal)?] => $i:ty, $o:ty => $func:expr);+;} => {
 $(
