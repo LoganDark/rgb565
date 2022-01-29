@@ -76,6 +76,7 @@ impl Rgb565 {
 	/// Unpacks r5, g6, and b5 values from a single RGB565 value. To unpack from
 	/// BGR565 instead, swap r5 and b5.
 	#[inline]
+	#[must_use]
 	pub fn unpack_565(packed: u16) -> (u8, u8, u8) { lut::unpack_565(packed) }
 
 	/// Packs r5, g6, and b5 values into a single RGB565 value. To pack into
@@ -87,45 +88,67 @@ impl Rgb565 {
 	/// fit into the space allotted by the RGB565 format. If values are passed
 	/// that are too big, the function will panic.
 	#[inline]
+	#[must_use]
 	pub fn pack_565(unpacked: (u8, u8, u8)) -> u16 { lut::pack_565(unpacked) }
 
 	/// From rgb565, where the colors are packed as `rrrrrggggggbbbbb`
 	#[inline]
+	#[must_use]
 	pub fn from_rgb565(packed: u16) -> Self { Self(packed) }
+
 	/// From bgr565, where the colors are packed as `bbbbbggggggrrrrr`
 	#[inline]
+	#[must_use]
 	pub fn from_bgr565(packed: u16) -> Self { Self(lut::SWAP_COMPONENTS_LUT.map(packed)) }
+
 	/// To rgb565, where the colors are packed as `rrrrrggggggbbbbb`
 	#[inline]
+	#[must_use]
 	pub fn to_rgb565(&self) -> u16 { self.0 }
+
 	/// To bgr565, where the colors are packed as `bbbbbggggggrrrrr`
 	#[inline]
+	#[must_use]
 	pub fn to_bgr565(&self) -> u16 { lut::SWAP_COMPONENTS_LUT.map(self.0) }
 
 	/// From rgb565_le, where the colors are stored as `[gggbbbbb, rrrrrggg]`
 	#[inline]
+	#[must_use]
 	pub fn from_rgb565_le(bytes: [u8; 2]) -> Self { Self::from_rgb565(u16::from_le_bytes(bytes)) }
+
 	/// From rgb565_be, where the colors are stored as `[rrrrrggg, gggbbbbb]`
 	#[inline]
+	#[must_use]
 	pub fn from_rgb565_be(bytes: [u8; 2]) -> Self { Self::from_rgb565(u16::from_be_bytes(bytes)) }
+
 	/// From bgr565_le, where the colors are stored as `[gggrrrrr, bbbbbggg]`
 	#[inline]
+	#[must_use]
 	pub fn from_bgr565_le(bytes: [u8; 2]) -> Self { Self::from_bgr565(u16::from_le_bytes(bytes)) }
+
 	/// From bgr565_be, where the colors are stored as `[bbbbbggg, gggrrrrr]`
 	#[inline]
+	#[must_use]
 	pub fn from_bgr565_be(bytes: [u8; 2]) -> Self { Self::from_bgr565(u16::from_be_bytes(bytes)) }
 
 	/// From rgb565_le, where the colors are stored as `[gggbbbbb, rrrrrggg]`
 	#[inline]
+	#[must_use]
 	pub fn to_rgb565_le(&self) -> [u8; 2] { self.to_rgb565().to_le_bytes() }
+
 	/// From rgb565_be, where the colors are stored as `[rrrrrggg, gggbbbbb]`
 	#[inline]
+	#[must_use]
 	pub fn to_rgb565_be(&self) -> [u8; 2] { self.to_rgb565().to_be_bytes() }
+
 	/// From bgr565_le, where the colors are stored as `[gggrrrrr, bbbbbggg]`
 	#[inline]
+	#[must_use]
 	pub fn to_bgr565_le(&self) -> [u8; 2] { self.to_bgr565().to_le_bytes() }
+
 	/// From bgr565_be, where the colors are stored as `[bbbbbggg, gggrrrrr]`
 	#[inline]
+	#[must_use]
 	pub fn to_bgr565_be(&self) -> [u8; 2] { self.to_bgr565().to_be_bytes() }
 
 	/// From rgb565 components, where r fits into 5 bits, g into 6 and b into 5
@@ -136,27 +159,35 @@ impl Rgb565 {
 	/// fit into the space allotted by the RGB565 format. If values are passed
 	/// that are too big, the function will panic.
 	#[inline]
+	#[must_use]
 	pub fn from_rgb565_components(r: u8, g: u8, b: u8) -> Self {
 		Self(Self::pack_565((r, g, b)))
 	}
 
 	#[inline]
+	#[must_use]
 	pub fn from_rgb888_components(r: u8, g: u8, b: u8) -> Self { Self(lut::L888_TO_L565_LUT.map([r, g, b])) }
+
 	#[cfg(any(feature = "std", feature = "s888_to_l565_lut"))]
 	#[inline]
+	#[must_use]
 	pub fn from_srgb888_components(r: u8, g: u8, b: u8) -> Self { Self(lut::S888_TO_L565_LUT.map([r, g, b])) }
 
 	/// To rgb565 components, where r fits into 5 bits, g into 6 and b into 5
 	#[inline]
+	#[must_use]
 	pub fn to_rgb565_components(&self) -> [u8; 3] {
 		let (r, g, b) = Self::unpack_565(self.0);
 		[r, g, b]
 	}
 
 	#[inline]
+	#[must_use]
 	pub fn to_rgb888_components(&self) -> [u8; 3] { lut::L565_TO_L888_LUT.map(self.0) }
+
 	#[cfg(any(feature = "std", feature = "l565_to_s888_lut"))]
 	#[inline]
+	#[must_use]
 	pub fn to_srgb888_components(&self) -> [u8; 3] { lut::L565_TO_S888_LUT.map(self.0) }
 }
 
